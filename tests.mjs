@@ -147,9 +147,6 @@ tests("parse()", () => {
         },
     };
     function startNegation(tree) {
-        if (tree.last() === '') {
-            tree.pop();
-        }
         tree.add();
         tree.set('_', 'not');
         return 'NEGATED';
@@ -159,9 +156,6 @@ tests("parse()", () => {
         return 'ANY';
     }
     function startParenthesis(tree) {
-        if (tree.last() === '') {
-            tree.pop();
-        }
         if (tree._node()._ === 'not') {    //   terminate negation
             tree.leave();
         }
@@ -169,9 +163,6 @@ tests("parse()", () => {
         return 'ANY';
     }
     function endParenthesis(tree) {
-        if (tree.last() === '') {
-            tree.pop();
-        }
         tree.leave();
         return 'ANY';
     }
