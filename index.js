@@ -29,10 +29,28 @@ function load(url) {
     });
 };
 
+// Traverse a tree (list-of-lists) and remove all occurrences of the empty
+// string ('') and the empty lists ([]). This will modify the original tree +
+// return the same (now modified) tree as a return value.
+function pruneTree(tree) {
+    var i = 0, t;
+    while (i < tree.length) {
+        t = tree[i];
+        // NOTA BENE: pruneTree() is called recursivelly in comparison.
+        if (t === '' || (Array.isArray(t) && pruneTree(t).length === 0)) {
+            tree.splice(i, 1);
+        } else {
+            i += 1;
+        }
+    }
+    return tree;
+}
+
 function parse(tokens, tree, stateMachine) {
     let state = stateMachine.startState;
     let max   = tokens.length - 1;
-    return tokens.reduce(function (tree, token, i) {
+    let postproc = stateMachine.postprocess || function (x) { return x; };
+    let newTree = tokens.reduce(function (tree, token, i) {
         if (stateMachine[state] === undefined) {
             throw "Unknown state '" + state + "'";
         }
@@ -52,11 +70,7 @@ function parse(tokens, tree, stateMachine) {
         }
         return tree;
     }, tree);
-
-    // FIXME: Maybe postprocess <tree> here, and remove trailing empty strings
-    // '' and/or empty lists [] -- maybe by providing additional callback for
-    // which can be used to call tree.xxx() methods and prune the entire thing
-    // after having produced it?
+    return postproc(newTree);
 }
 
 // Prettifies a javascript object, a la Chrome debugging console.

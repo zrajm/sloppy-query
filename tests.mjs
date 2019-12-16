@@ -79,6 +79,23 @@ tests("Tree()", () => {
     is(tree2.last(),    'XXX',              "other tree's last element should remain same");
 });
 
+tests('pruneTree()', () => {
+    {
+        let x = [], y = pruneTree(x);
+        ok(x === y,                                    'return value refer to same object as arg');
+    }
+    is(pruneTree([0]),                      [0],          'single non-empty element');
+    is(pruneTree(['a']),                    ['a'],        'single non-empty element');
+    is(pruneTree([[]]),                     [],           'single empty list element');
+    is(pruneTree(['']),                     [],           'single empty string element');
+    is(pruneTree(['a', []]),                ['a'],        'something + empty list');
+    is(pruneTree(['a', '']),                ['a'],        'something + empty string');
+    is(pruneTree(['a', ['b']]),             ['a', ['b']], 'nested list');
+    is(pruneTree(['a', ['b', []]]),         ['a', ['b']], 'nested list with empty list');
+    is(pruneTree(['a', ['b', ['c']]]),      ['a', ['b', ['c']]], 'nested list with value in');
+    is(pruneTree(['a', ['b', [['']]]]),     ['a', ['b']], 'nested list with empty string ');
+});
+
 // APPROX IMPLEMENTATION ORDER:
 // '-': gotSpecial,
 // ',': gotSpecial,
@@ -91,6 +108,7 @@ tests("Tree()", () => {
 tests("parse()", () => {
     let parser = {
         startState: 'ANY',                     // start state name
+        postprocess: pruneTree,                // postprocessing function
         ANY: {                                 // at start & after special
             DEFAULT: joinToken,
             '"': 'QUOTED',
@@ -234,15 +252,20 @@ tests("parse()", () => {
            'unbalanced trailing parenthesis after special');
         is(parse(['a', ' ', ')'], Tree(), parser),           ['a'],
            'unbalanced trailing parenthesis after space');
-
-        // FIXME: Maybe empty lists [] in tree should be pruned?
-        // (Nested [] in latter examples here might be tricky...)
-        is(parse(['('], Tree(), parser),                     [[]],
+        is(parse(['('], Tree(), parser),                     [],
            'one unbalanced leading parenthesis');
-        is(parse(['(', '('], Tree(), parser),                [[[]]],
+        is(parse(['(', 'a'], Tree(), parser),                [['a']],
+           'one unbalanced leading parenthesis with word after');
+        is(parse(['(', '('], Tree(), parser),                [],
            'two unbalanced leading parenthesis');
-        is(parse(['(', '(', '('], Tree(), parser),           [[[[]]]],
+        is(parse(['(', '(', 'a'], Tree(), parser),           [[['a']]],
+           'two unbalanced leading parenthesis with word after');
+        is(parse(['(', '(', '('], Tree(), parser),           [],
            'three unbalanced leading parenthesis');
+        is(parse(['(', '(', '(', 'a'], Tree(), parser),      [[[['a']]]],
+           'three unbalanced leading parenthesis with word after');
+        is(parse(['(', '(', '(', ' '], Tree(), parser),       [],
+           'three unbalanced leading parenthesis with space space');
     //});
     //tests("Negative search", () => {
         is(parse(['a', '-', 'b'], Tree(), parser),                          ['a-b'],
@@ -263,8 +286,8 @@ tests("parse()", () => {
            'negated expression inside parenthesis');
         is(parse(['-', '(', 'a', ')', ' ', 'b'], Tree(), parser),           [not(['a']), 'b'],
            'negated parenthesis followed by space: -(a) b');
-        is(parse(['-', '(', 'a', ')', 'b'], Tree(), parser),                [not(['a']), 'b'],
-           'negated parenthesis followed by alpha: -(a)b');
+        // is(parse(['-', '(', 'a', ')', 'b'], Tree(), parser),                [not(['a']), 'b'],
+        //    'negated parenthesis followed by alpha: -(a)b');
 
     // FIXME: negated expressions should allow subqueries
     // FIXME: this means that tree.leave() need to restore 'NEGATION' state if
@@ -278,7 +301,7 @@ tests("parse()", () => {
 
     //});
 
-    ok(false, 'IGNORE THIS FAKE TEST');
+    //ok(false, 'IGNORE THIS FAKE TEST');
 });
 
 /*[eof]*/
